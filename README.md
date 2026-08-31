@@ -225,7 +225,8 @@ they cannot be skipped.
 - `docs/ACCEPTANCE-TESTS.md` — the acceptance tests for all six features
 - `docs/SECURITY-CHECKLIST.md` — the owner's pre-pilot security checklist
 - `docs/BACKUPS.md` — daily backups and the restore test
-- `supabase/checks/rls_audit.sql` — must return zero rows
+- `supabase/checks/rls_audit.sql` — one query; zero rows is a pass
+- `supabase/checks/policy_inventory.sql` — every policy, to read once
 
 Phase 1 is complete when all of those pass, demo data is gone from
 production, the firm's users are invited, and 10–20 of their live files

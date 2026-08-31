@@ -63,10 +63,13 @@ curl -s -X PATCH "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/matters?id=eq.<firm B matter
 
 ## [ ] 2. Row-level security is enabled on every table
 
-Run `supabase/checks/rls_audit.sql` in the SQL editor. Queries 1, 2, 3, 5
-and 6 must all return **zero rows**. Query 4 lists policies that do not
-mention `firm_id`; read each one and satisfy yourself it is scoped some
-other way before accepting it.
+Paste `supabase/checks/rls_audit.sql` into the SQL editor and run it. It
+is deliberately one query — the editor shows only the last result set, so
+a file of separate SELECTs would hide all but the final check.
+
+**Zero rows is a pass.** Any row names the table or policy at fault and
+why it matters. `supabase/checks/policy_inventory.sql` lists every policy
+in full, which is worth reading through once before the pilot.
 
 Also run Supabase's own linter: **Advisors → Security Advisor**. Resolve
 anything it raises about RLS or exposed schemas.

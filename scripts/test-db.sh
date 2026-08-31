@@ -33,14 +33,14 @@ for file in supabase/migrations/*.sql; do
   "${PSQL[@]}" -d "$DB" -f "$file"
 done
 
-echo "Running the RLS audit — every check must return zero rows"
-audit=$(psql -d "$DB" -t -A -F' | ' -f supabase/checks/rls_audit.sql 2>/dev/null \
-  | grep -E '^(RLS NOT ENABLED|NO POLICIES|NO firm_id COLUMN|PUBLIC BUCKET|HELPER )' || true)
+echo "Running the RLS audit — it must return zero rows"
+audit=$(psql -d "$DB" -t -A -F' | ' -f supabase/checks/rls_audit.sql 2>/dev/null | sed '/^$/d')
 if [ -n "$audit" ]; then
   echo "RLS audit found problems:"
-  echo "$audit"
+  echo "$audit" | sed 's/^/  /'
   exit 1
 fi
+echo "  clean"
 
 echo "Running the policy tests"
 psql -v ON_ERROR_STOP=1 -d "$DB" -f supabase/tests/01_policies_test.sql 2>&1 \
