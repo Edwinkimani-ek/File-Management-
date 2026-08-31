@@ -69,6 +69,12 @@ export function SettingsForm({ firm, logoSrc }: { firm: Firm; logoSrc: string | 
       </div>
 
       <SubmitButton pendingText="Saving…">Save settings</SubmitButton>
+
+      {/* The seed script and the pre-pilot security checks both need this. */}
+      <div className="border-t border-ink-200 pt-4">
+        <p className="text-xs uppercase tracking-wide text-ink-500">Firm id</p>
+        <p className="mt-1 select-all break-all font-mono text-xs text-ink-600">{firm.id}</p>
+      </div>
     </form>
   );
 }

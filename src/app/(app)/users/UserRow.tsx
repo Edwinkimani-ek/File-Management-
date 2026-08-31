@@ -19,6 +19,9 @@ export function UserRow({ user, isSelf }: { user: AppUser; isSelf: boolean }) {
           {isSelf ? <span className="ml-2 text-xs text-ink-500">(you)</span> : null}
         </p>
         <p className="text-xs text-ink-500">{user.email}</p>
+        {/* Needed for the pre-pilot security checks, which ask you to paste
+            real ids into URLs and API calls. */}
+        <p className="mt-1 select-all font-mono text-[11px] text-ink-400">{user.id}</p>
         {state.error ? <p className="mt-1 text-xs text-red-700">{state.error}</p> : null}
         {state.success ? <p className="mt-1 text-xs text-brand-700">{state.success}</p> : null}
       </td>
