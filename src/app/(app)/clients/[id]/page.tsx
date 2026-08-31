@@ -7,6 +7,9 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { FeeNoteStatusBadge, MatterStatusBadge } from '@/components/ui/StatusBadges';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Alert } from '@/components/ui/Alert';
+import { ConfirmDelete } from '@/components/ui/ConfirmDelete';
+import { deleteClientAction } from '../actions';
 import { CLIENT_TYPE_LABELS, PRACTICE_AREA_LABELS } from '@/lib/labels';
 import { formatDate } from '@/lib/dates';
 import { formatKes } from '@/lib/money';
@@ -14,7 +17,13 @@ import type { Client, FeeNote, Matter } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ClientPage({ params }: { params: { id: string } }) {
+export default async function ClientPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { error?: string };
+}) {
   const { user } = await requireSession();
   const supabase = createClient();
 
@@ -68,9 +77,24 @@ export default async function ClientPage({ params }: { params: { id: string } })
             {can(user.role).createClients ? (
               <Link href={`/clients/${record.id}/edit`} className="btn-primary">Edit</Link>
             ) : null}
+            {can(user.role).deleteRecords ? (
+              <ConfirmDelete
+                action={deleteClientAction}
+                hidden={{ client_id: record.id }}
+                label="Delete"
+                confirmLabel="Delete this client"
+                question={`Remove ${record.full_name} from the firm's clients?`}
+              />
+            ) : null}
           </>
         }
       />
+
+      {searchParams.error ? (
+        <div className="mb-6">
+          <Alert tone="error">{searchParams.error}</Alert>
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="card p-4 sm:p-6">

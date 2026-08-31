@@ -1,12 +1,10 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { useFormState } from 'react-dom';
+import { useRef, useState, useTransition } from 'react';
 import { Camera, Upload } from 'lucide-react';
 import { uploadDocumentsAction } from '@/app/(app)/matters/[id]/documents-actions';
 import { Alert } from '@/components/ui/Alert';
-import { SubmitButton } from '@/components/ui/SubmitButton';
-import { EMPTY_FORM_STATE } from '@/lib/forms';
+import { EMPTY_FORM_STATE, type FormState } from '@/lib/forms';
 import { DOCUMENT_CATEGORY_LABELS, entries } from '@/lib/labels';
 import {
   DOCUMENT_ACCEPT_ATTRIBUTE, formatBytes, validateDocumentFile,
@@ -16,15 +14,23 @@ import {
  * Drag-and-drop or tap-to-choose upload, plus a camera button that opens
  * the phone's rear camera directly — advocates photograph a stamped copy
  * at the registry and file it before they leave the building.
+ *
+ * The chosen files live in React state rather than in a file input, so
+ * that a photo can be added to a set already picked from the device. That
+ * means the FormData is assembled here and the action called directly,
+ * instead of letting the browser serialise a form whose file input we
+ * would have had to rewrite on the way past.
  */
 export function DocumentUpload({ matterId }: { matterId: string }) {
-  const [state, action] = useFormState(uploadDocumentsAction, EMPTY_FORM_STATE);
+  const [state, setState] = useState<FormState>(EMPTY_FORM_STATE);
   const [files, setFiles] = useState<File[]>([]);
-  const [localError, setLocalError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [pending, startTransition] = useTransition();
+
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
+  const categoryRef = useRef<HTMLSelectElement>(null);
+  const notesRef = useRef<HTMLInputElement>(null);
 
   const accept = (incoming: FileList | null) => {
     if (!incoming || incoming.length === 0) return;
@@ -32,36 +38,41 @@ export function DocumentUpload({ matterId }: { matterId: string }) {
     for (const file of next) {
       const problem = validateDocumentFile(file);
       if (problem) {
-        setLocalError(problem);
+        setState({ error: problem });
         return;
       }
     }
-    setLocalError(null);
+    setState(EMPTY_FORM_STATE);
     setFiles((current) => [...current, ...next]);
   };
 
-  // The chosen files live in React state, not in the file inputs, so the
-  // list survives adding more from the camera. Rebuild a DataTransfer on
-  // submit so the action receives them all under one field name.
-  const onSubmit = () => {
-    const transfer = new DataTransfer();
-    for (const file of files) transfer.items.add(file);
-    if (inputRef.current) inputRef.current.files = transfer.files;
-    if (cameraRef.current) cameraRef.current.value = '';
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (files.length === 0) {
+      setState({ error: 'Choose at least one file to upload.' });
+      return;
+    }
+
+    const data = new FormData();
+    data.set('matter_id', matterId);
+    data.set('category', categoryRef.current?.value ?? 'other');
+    data.set('notes', notesRef.current?.value ?? '');
+    for (const file of files) data.append('files', file);
+
+    startTransition(async () => {
+      const result = await uploadDocumentsAction(EMPTY_FORM_STATE, data);
+      setState(result);
+      if (!result.error) {
+        setFiles([]);
+        if (notesRef.current) notesRef.current.value = '';
+      }
+    });
   };
 
   return (
-    <form
-      ref={formRef}
-      action={action}
-      onSubmit={onSubmit}
-      className="space-y-4 border-b border-ink-200 p-4"
-    >
+    <form onSubmit={submit} className="space-y-4 border-b border-ink-200 p-4">
       {state.error ? <Alert tone="error">{state.error}</Alert> : null}
       {state.success ? <Alert tone="success">{state.success}</Alert> : null}
-      {localError ? <Alert tone="error">{localError}</Alert> : null}
-
-      <input type="hidden" name="matter_id" value={matterId} />
 
       <div
         onDragOver={(e) => {
@@ -95,13 +106,14 @@ export function DocumentUpload({ matterId }: { matterId: string }) {
           <Camera className="h-4 w-4" /> Take a photo
         </button>
 
-        <input ref={inputRef} type="file" name="files" multiple className="hidden"
+        <input ref={inputRef} type="file" multiple className="hidden"
                accept={DOCUMENT_ACCEPT_ATTRIBUTE}
                onChange={(e) => {
                  accept(e.target.files);
                  e.target.value = '';
                }} />
-        <input ref={cameraRef} type="file" className="hidden" accept="image/*" capture="environment"
+        <input ref={cameraRef} type="file" className="hidden" accept="image/*"
+               capture="environment"
                onChange={(e) => {
                  accept(e.target.files);
                  e.target.value = '';
@@ -129,7 +141,7 @@ export function DocumentUpload({ matterId }: { matterId: string }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="upload_category">Category</label>
-          <select id="upload_category" name="category" className="input" defaultValue="pleading">
+          <select ref={categoryRef} id="upload_category" className="input" defaultValue="pleading">
             {entries(DOCUMENT_CATEGORY_LABELS).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
             ))}
@@ -137,14 +149,16 @@ export function DocumentUpload({ matterId }: { matterId: string }) {
         </div>
         <div>
           <label className="label" htmlFor="upload_notes">Note (optional)</label>
-          <input id="upload_notes" name="notes" className="input"
+          <input ref={notesRef} id="upload_notes" className="input"
                  placeholder="Filed at Milimani, stamped 14/03/2026" />
         </div>
       </div>
 
-      <SubmitButton pendingText="Uploading…">
-        Upload {files.length > 0 ? `${files.length} file${files.length === 1 ? '' : 's'}` : ''}
-      </SubmitButton>
+      <button type="submit" className="btn-primary" disabled={pending || files.length === 0}>
+        {pending
+          ? 'Uploading…'
+          : `Upload${files.length > 0 ? ` ${files.length} file${files.length === 1 ? '' : 's'}` : ''}`}
+      </button>
     </form>
   );
 }

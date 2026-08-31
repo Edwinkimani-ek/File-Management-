@@ -7,6 +7,11 @@ const PUBLIC_PATHS = [
   '/forgot-password',
   '/reset-password',
   '/invite',
+  // Where the emailed recovery and confirmation links land. The visitor
+  // has no session yet — that route is what gives them one — so bouncing
+  // them to /login here would break the password reset flow entirely.
+  '/auth',
+  // Guarded by CRON_SECRET rather than by a session.
   '/api/cron',
 ];
 

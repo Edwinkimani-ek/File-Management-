@@ -10,6 +10,10 @@ import { text, type FormState } from '@/lib/forms';
 
 const MIN_PASSWORD = 8;
 
+const NO_SERVICE_KEY =
+  'This deployment is missing its Supabase service role key, so accounts cannot be ' +
+  'created. Ask whoever set it up to add SUPABASE_SERVICE_ROLE_KEY.';
+
 // -------------------------------------------------------------- sign up
 /**
  * Creates the firm and its first Partner in one go. Runs with the service
@@ -29,6 +33,7 @@ export async function signUpAction(_prev: FormState, data: FormData): Promise<Fo
     return { error: `Choose a password of at least ${MIN_PASSWORD} characters.` };
   }
 
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return { error: NO_SERVICE_KEY };
   const admin = createAdminClient();
 
   const { data: created, error: authError } = await admin.auth.admin.createUser({
@@ -225,6 +230,7 @@ export async function acceptInviteAction(
   }
   if (password !== confirm) return { error: 'The two passwords do not match.' };
 
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return { error: NO_SERVICE_KEY };
   const admin = createAdminClient();
   const { data: invite } = await admin
     .from('invitations')

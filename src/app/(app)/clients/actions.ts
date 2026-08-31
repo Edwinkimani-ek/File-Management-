@@ -82,6 +82,46 @@ export async function updateClientAction(_prev: FormState, data: FormData): Prom
   redirect(`/clients/${id}`);
 }
 
+/** Soft delete. Partner only, refused again by the clients_guard trigger. */
+export async function deleteClientAction(data: FormData): Promise<void> {
+  const { user, firm } = await requireSession();
+  if (!can(user.role).deleteRecords) redirect('/forbidden');
+
+  const id = text(data, 'client_id');
+  if (!id) return;
+
+  const supabase = createClient();
+
+  // A client with live matters stays. Losing the client behind an open
+  // file would leave that file pointing at nothing.
+  const { count } = await supabase
+    .from('matters')
+    .select('id', { count: 'exact', head: true })
+    .eq('client_id', id)
+    .is('deleted_at', null);
+  if ((count ?? 0) > 0) {
+    redirect(`/clients/${id}?error=${encodeURIComponent(
+      'This client still has matters on file. Delete or reassign those first.')}`);
+  }
+
+  await supabase
+    .from('clients')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+
+  await logActivity(supabase, {
+    firmId: firm.id,
+    userId: user.id,
+    action: 'client.updated',
+    entityType: 'client',
+    entityId: id,
+    detail: 'Deleted',
+  });
+
+  revalidatePath('/clients');
+  redirect('/clients');
+}
+
 /**
  * Backs the live duplicate/conflict panel on the client and matter forms.
  * Duplicates are looked for on the identifiers a Kenyan firm actually has

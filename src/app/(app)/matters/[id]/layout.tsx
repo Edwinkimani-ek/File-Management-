@@ -4,6 +4,8 @@ import { can } from '@/lib/permissions';
 import { loadMatter } from '@/lib/matters';
 import { MatterTabs } from '@/components/matter/MatterTabs';
 import { CloseMatterPanel, ReopenMatterButton } from '@/components/matter/CloseMatterPanel';
+import { ConfirmDelete } from '@/components/ui/ConfirmDelete';
+import { deleteMatterAction } from '@/app/(app)/matters/actions';
 import { MatterStatusBadge } from '@/components/ui/StatusBadges';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
@@ -57,6 +59,15 @@ export default async function MatterLayout({
             ) : null}
             {isClosed && user.role === 'partner' ? (
               <ReopenMatterButton matterId={matter.id} />
+            ) : null}
+            {permissions.deleteRecords ? (
+              <ConfirmDelete
+                action={deleteMatterAction}
+                hidden={{ matter_id: matter.id }}
+                label="Delete"
+                confirmLabel="Delete this matter"
+                question={`Remove ${matter.file_reference} from the firm's files?`}
+              />
             ) : null}
           </div>
         </div>
