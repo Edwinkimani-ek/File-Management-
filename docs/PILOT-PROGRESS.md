@@ -20,7 +20,9 @@ of us has to reconstruct it from memory or scrollback.
 | App deployed and reachable | **Done** — https://file-management-beige.vercel.app |
 | Schema applied to staging | **Done** — signup reached the auth service, so the tables are there |
 | Auth redirect URL configured | **Outstanding — you** |
-| Firms registered, users invited | **Outstanding — you** |
+| Firm A registered, partner signed in | **Done** — Kimani & Co Advocates |
+| Firm B registered | **Outstanding — you** |
+| Associate and clerk invited | **Outstanding — you** |
 | Demo data seeded | **Outstanding — you** |
 | Acceptance tests run | **Outstanding — you** |
 | Security checklist run | **Outstanding — you** |
@@ -68,7 +70,7 @@ on — not against the real project, which this environment cannot reach.
 
 | Feature | Built | Checked so far |
 |---|---|---|
-| 1. Auth, firms, users | Signup, login, invitations, roles, disable, firm settings | Disabled user refused everywhere; clerk blocked from partner-only pages |
+| 1. Auth, firms, users | Signup, login, invitations, roles, disable, firm settings | **Confirmed live:** firm signup, partner sign-in, role-aware navigation. Locally: disabled user refused everywhere; clerk blocked from partner-only pages |
 | 2. Clients | Create/edit/view, duplicate warnings, conflict check | Conflict check finds opposing parties firm-wide, never crosses a firm |
 | 3. Matters | The file, its four tabs, list filters, closing, dashboard | Associate sees only assigned + firm-wide; duplicate file reference rejected; closed file refuses non-partners |
 | 4. Documents | Upload, preview, signed downloads, soft delete | Partner-only delete; signed URLs expire in 10 minutes; buckets private |

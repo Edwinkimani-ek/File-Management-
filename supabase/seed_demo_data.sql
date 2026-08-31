@@ -54,6 +54,7 @@ declare
   v_fee_paid  uuid;
   v_total     integer;
 
+  v_prefix text;
   v_year  integer := extract(year from (now() at time zone 'Africa/Nairobi'))::int;
   v_today date    := (now() at time zone 'Africa/Nairobi')::date;
 begin
@@ -66,6 +67,15 @@ begin
 
   -- ---------------------------------------------------------- look-ups
   select f.id, f.name into v_firm, v_firm_name from public.firms f;
+
+  -- First two letters of the firm's first word, as the app's own file
+  -- reference suggestion does: "Kimani & Co Advocates" gives KM/CIV/045.
+  -- Each firm therefore gets its own prefix, so the two demo firms cannot
+  -- be mistaken for each other during the cross-firm checks.
+  v_prefix := upper(substring(
+    regexp_replace(split_part(coalesce(v_firm_name, 'Firm'), ' ', 1), '[^A-Za-z]', '', 'g')
+    from 1 for 2));
+  if coalesce(v_prefix, '') = '' then v_prefix := 'FM'; end if;
 
   if v_firm is null then
     execute 'reset role';
@@ -125,7 +135,7 @@ begin
     (firm_id, file_reference, client_id, title, practice_area, court_station,
      court_case_number, opposing_party, opposing_advocates, status, assigned_to,
      visibility, date_opened, cause_of_action_date, description, created_by)
-  values (v_firm, 'KM/CIV/045/' || v_year, v_client_person,
+  values (v_firm, v_prefix || '/CIV/045/' || v_year, v_client_person,
           'Wanjiku v Kenya Power & Lighting Co. — claim for damages',
           'civil_litigation', 'Milimani Law Courts', 'HCCC E' || v_year || '/238',
           'Kenya Power & Lighting Company PLC', 'Mbogo, Wafula & Partners Advocates',
@@ -138,7 +148,7 @@ begin
   insert into public.matters
     (firm_id, file_reference, client_id, title, practice_area, opposing_party,
      opposing_advocates, status, assigned_to, visibility, date_opened, description, created_by)
-  values (v_firm, 'KM/CONV/012/' || v_year, v_client_company,
+  values (v_firm, v_prefix || '/CONV/012/' || v_year, v_client_company,
           'Sunrise Millers — purchase of LR 209/14582, Industrial Area',
           'conveyancing', 'Hillside Properties Limited', 'Achieng & Co. Advocates',
           'active', v_partner, 'firm_wide', v_today - 60,
@@ -151,7 +161,7 @@ begin
     (firm_id, file_reference, client_id, title, practice_area, court_station,
      court_case_number, opposing_party, status, assigned_to, visibility,
      date_opened, created_by)
-  values (v_firm, 'KM/EMP/003/' || v_year, v_client_third,
+  values (v_firm, v_prefix || '/EMP/003/' || v_year, v_client_third,
           'Mwendwa v Bluewave Logistics — unfair termination',
           'employment', 'Employment and Labour Relations Court, Nairobi',
           'ELRC E' || v_year || '/91', 'Bluewave Logistics Limited',
@@ -163,7 +173,7 @@ begin
   insert into public.matters
     (firm_id, file_reference, client_id, title, practice_area, status,
      assigned_to, visibility, date_opened, created_by)
-  values (v_firm, 'KM/CONV/013/' || v_year, v_client_company,
+  values (v_firm, v_prefix || '/CONV/013/' || v_year, v_client_company,
           'Sunrise Millers — lease of warehouse premises', 'conveyancing',
           'active', v_clerk, 'assigned_only', v_today - 15, v_partner);
 
@@ -171,7 +181,7 @@ begin
   insert into public.matters
     (firm_id, file_reference, client_id, title, practice_area, court_station,
      status, assigned_to, visibility, date_opened, date_closed, closing_note, created_by)
-  values (v_firm, 'KM/SUCC/007/' || (v_year - 1), v_client_person,
+  values (v_firm, v_prefix || '/SUCC/007/' || (v_year - 1), v_client_person,
           'Estate of the late Samuel Kariuki — grant of letters of administration',
           'succession', 'Milimani Law Courts', 'closed', v_partner, 'firm_wide',
           v_today - 600, v_today - 40,
