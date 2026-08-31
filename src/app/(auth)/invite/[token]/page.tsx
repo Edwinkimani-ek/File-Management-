@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { hashToken } from '../../actions';
+import { hashToken } from '@/lib/invitations';
 import { ROLE_LABELS } from '@/lib/labels';
 import { Alert } from '@/components/ui/Alert';
 import { AcceptInviteForm } from './AcceptInviteForm';

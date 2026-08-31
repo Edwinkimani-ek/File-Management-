@@ -5,9 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireRole } from '@/lib/auth';
 import { logActivity } from '@/lib/activity';
-import { hashToken, newInviteToken, sendInviteEmail } from '@/app/(auth)/actions';
+import { hashToken, inviteUrl, newInviteToken, sendInviteEmail } from '@/lib/invitations';
 import { ROLE_LABELS } from '@/lib/labels';
-import { env } from '@/lib/env';
 import { friendlyDbError, text, type FormState } from '@/lib/forms';
 import type { UserRole } from '@/lib/types';
 
@@ -65,7 +64,7 @@ export async function inviteUserAction(_prev: FormState, data: FormData): Promis
     // Email is not wired up yet (or bounced). Hand the partner the link so
     // the invitation is still usable rather than silently lost.
     return {
-      success: `Invitation created, but the email could not be sent (${mail.error}). Share this link with ${fullName}: ${env.siteUrl}/invite/${token}`,
+      success: `Invitation created, but the email could not be sent (${mail.error}). Share this link with ${fullName}: ${inviteUrl(token)}`,
     };
   }
   return { success: `Invitation emailed to ${email}.` };
