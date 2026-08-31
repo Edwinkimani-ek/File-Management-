@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-ink-50 text-ink-900 antialiased;
+  }
+  /* Inputs must not be smaller than 16px or iOS zooms the page when the
+     advocate taps one in a court corridor. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-lg border border-ink-200 bg-white shadow-sm;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-ink-700;
+  }
+  .input {
+    @apply block w-full rounded-md border border-ink-300 bg-white px-3 py-2 text-ink-900
+           placeholder:text-ink-400 focus:border-brand-500 focus:outline-none
+           focus:ring-2 focus:ring-brand-500/30 disabled:bg-ink-100 disabled:text-ink-500;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm
+           font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-700;
+  }
+  .btn-secondary {
+    @apply btn border border-ink-300 bg-white text-ink-800 hover:bg-ink-100;
+  }
+  .btn-danger {
+    @apply btn border border-red-300 bg-white text-red-700 hover:bg-red-50;
+  }
+  .table-wrap {
+    @apply overflow-x-auto;
+  }
+  .th {
+    @apply whitespace-nowrap px-3 py-2 text-left text-xs font-semibold uppercase
+           tracking-wide text-ink-500;
+  }
+  .td {
+    @apply px-3 py-3 align-top text-sm text-ink-800;
+  }
+}
