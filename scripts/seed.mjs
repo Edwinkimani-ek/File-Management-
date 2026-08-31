@@ -8,8 +8,10 @@
  * try reaching Firm B's records while signed in as Firm A, and that needs
  * a real second tenant with real ids to paste into the URL bar.
  *
- * Usage:
- *   NEXT_PUBLIC_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/seed.mjs
+ * Usage — note --env-file, since plain `node` does not read .env.local
+ * the way Next.js does:
+ *
+ *   SEED_CONFIRM=yes node --env-file=.env.local scripts/seed.mjs
  *
  * Refuses to run unless SEED_CONFIRM=yes, because it writes with the
  * service role key and that key can just as easily be pointed at
@@ -22,7 +24,12 @@ const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const password = process.env.SEED_PASSWORD ?? 'Wakili-Demo-2026';
 
 if (!url || !key) {
-  console.error('Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY first.');
+  console.error(
+    'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.\n\n' +
+      'Plain node does not read .env.local the way Next.js does, so point it at\n' +
+      'the file explicitly:\n\n' +
+      '  SEED_CONFIRM=yes node --env-file=.env.local scripts/seed.mjs\n',
+  );
   process.exit(1);
 }
 if (process.env.SEED_CONFIRM !== 'yes') {
