@@ -27,6 +27,8 @@ alter table public.diary_events         force row level security;
 alter table public.fee_notes            force row level security;
 alter table public.payments             force row level security;
 alter table public.activity_log         force row level security;
+alter table public.fee_note_sequences   force row level security;
+alter table public.diary_reminders_sent force row level security;
 
 -- --------------------------------------------------------------- firms
 create policy firms_select on public.firms for select to authenticated
@@ -61,11 +63,19 @@ create policy invitations_update on public.invitations for update to authenticat
 -- details); the financial section is a separate table they cannot read.
 create policy clients_select on public.clients for select to authenticated
   using (firm_id = app.firm_id() and deleted_at is null);
+-- Postgres re-checks the SELECT policies against the row an UPDATE
+-- produces, so a soft delete would refuse itself: setting deleted_at
+-- makes the row fail clients_select. Partners — the only role allowed to
+-- delete — can therefore still see a deleted record, which is also what
+-- you want if one has to be looked at or restored. Application queries
+-- filter deleted_at themselves, so nothing deleted appears in a list.
+create policy clients_select_deleted on public.clients for select to authenticated
+  using (firm_id = app.firm_id() and deleted_at is not null and app.is_partner());
 create policy clients_insert on public.clients for insert to authenticated
-  with check (firm_id = app.firm_id() and app.can_see_money());
+  with check (firm_id = app.firm_id() and app.is_fee_earner());
 create policy clients_update on public.clients for update to authenticated
-  using (firm_id = app.firm_id() and app.can_see_money())
-  with check (firm_id = app.firm_id() and app.can_see_money());
+  using (firm_id = app.firm_id() and app.is_fee_earner())
+  with check (firm_id = app.firm_id() and app.is_fee_earner());
 
 -- ------------------------------------------------------------- matters
 create policy matters_select on public.matters for select to authenticated
@@ -76,8 +86,11 @@ create policy matters_select on public.matters for select to authenticated
       or (app.user_role() = 'associate' and visibility = 'firm_wide')
     )
   );
+-- Same reason as clients_select_deleted above.
+create policy matters_select_deleted on public.matters for select to authenticated
+  using (firm_id = app.firm_id() and deleted_at is not null and app.is_partner());
 create policy matters_insert on public.matters for insert to authenticated
-  with check (firm_id = app.firm_id() and app.can_see_money());
+  with check (firm_id = app.firm_id() and app.is_fee_earner());
 create policy matters_update on public.matters for update to authenticated
   using (
     firm_id = app.firm_id() and (
@@ -92,6 +105,9 @@ create policy matters_update on public.matters for update to authenticated
 create policy documents_select on public.documents for select to authenticated
   using (firm_id = app.firm_id() and deleted_at is null
          and app.can_see_matter(matter_id));
+-- Same reason as clients_select_deleted above.
+create policy documents_select_deleted on public.documents for select to authenticated
+  using (firm_id = app.firm_id() and deleted_at is not null and app.is_partner());
 create policy documents_insert on public.documents for insert to authenticated
   with check (firm_id = app.firm_id() and app.can_write_matter(matter_id));
 -- Rename / re-categorise by anyone who can write the matter; the
@@ -110,12 +126,12 @@ create policy diary_select on public.diary_events for select to authenticated
 -- Clerks read the diary but do not write to it.
 create policy diary_insert on public.diary_events for insert to authenticated
   with check (
-    firm_id = app.firm_id() and app.can_see_money()
+    firm_id = app.firm_id() and app.is_fee_earner()
     and (matter_id is null or app.can_write_matter(matter_id))
   );
 create policy diary_update on public.diary_events for update to authenticated
   using (
-    firm_id = app.firm_id() and app.can_see_money()
+    firm_id = app.firm_id() and app.is_fee_earner()
     and (matter_id is null or app.can_write_matter(matter_id))
   )
   with check (firm_id = app.firm_id());

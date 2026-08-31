@@ -143,7 +143,7 @@ export default async function DiaryPage({
 
       <div className="card">
         <FilterBar
-          searchPlaceholder="Not used here"
+          showSearch={false}
           selects={[
             {
               name: 'assigned_to',

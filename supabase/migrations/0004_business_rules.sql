@@ -78,6 +78,13 @@ begin
     return new;
   end if;
 
+  -- payments_apply recomputes amount_paid and status from the payments
+  -- ledger. That update is this trigger's own work, not a caller trying
+  -- to set a status by hand, so it passes straight through.
+  if coalesce(current_setting('wakili.applying_payment', true), '') = '1' then
+    return new;
+  end if;
+
   -- Numbers and ownership are immutable once issued.
   new.fee_note_number := old.fee_note_number;
   new.firm_id         := old.firm_id;
@@ -87,15 +94,15 @@ begin
   -- Approval is a partner act. This is the server-side half of "the
   -- Approve button neither appears nor works via direct API call".
   if new.status = 'approved' and old.status <> 'approved' then
-    if not app.is_partner() then
+    if not (app.is_partner() or app.is_privileged()) then
       raise exception 'only a partner can approve a fee note'
         using errcode = '42501';
     end if;
     if old.status <> 'draft' then
       raise exception 'only a draft fee note can be approved';
     end if;
-    new.approved_by := auth.uid();
-    new.approved_at := now();
+    new.approved_by := coalesce(auth.uid(), new.approved_by);
+    new.approved_at := coalesce(new.approved_at, now());
   end if;
 
   -- Sending requires approval first.
@@ -108,7 +115,7 @@ begin
 
   -- Reverting to draft un-approves, and only a partner may do it.
   if new.status = 'draft' and old.status <> 'draft' then
-    if not app.is_partner() then
+    if not (app.is_partner() or app.is_privileged()) then
       raise exception 'only a partner can return a fee note to draft'
         using errcode = '42501';
     end if;
@@ -125,10 +132,12 @@ begin
     raise exception 'line items cannot change after approval';
   end if;
 
-  -- Paid / partially paid are derived from payments, never set by hand.
+  -- Paid / partially paid, and the paid figure itself, are derived from
+  -- the payments ledger and never set by hand.
   if new.status in ('paid', 'partially_paid') and old.status not in ('paid', 'partially_paid') then
     raise exception 'payment status follows recorded payments; record a payment instead';
   end if;
+  new.amount_paid := old.amount_paid;
 
   return new;
 end;
@@ -171,6 +180,8 @@ begin
   select coalesce(sum(amount), 0) into v_paid
   from public.payments where fee_note_id = v_fee_note_id;
 
+  perform set_config('wakili.applying_payment', '1', true);
+
   update public.fee_notes
   set amount_paid = v_paid,
       status = case
@@ -180,6 +191,8 @@ begin
                  else v_note.status
                end
   where id = v_fee_note_id;
+
+  perform set_config('wakili.applying_payment', '0', true);
 
   return null;
 end;
@@ -199,7 +212,7 @@ begin
   if v_status = 'draft' then
     raise exception 'approve the fee note before recording a payment against it';
   end if;
-  new.recorded_by := auth.uid();
+  new.recorded_by := coalesce(auth.uid(), new.recorded_by);
   return new;
 end;
 $$;
@@ -213,7 +226,8 @@ create trigger payments_guard_trg
 create or replace function public.documents_guard()
 returns trigger language plpgsql as $$
 begin
-  if new.deleted_at is not null and old.deleted_at is null and not app.is_partner() then
+  if new.deleted_at is not null and old.deleted_at is null
+     and not (app.is_partner() or app.is_privileged()) then
     raise exception 'only a partner can delete a document' using errcode = '42501';
   end if;
   new.firm_id      := old.firm_id;
@@ -235,7 +249,7 @@ begin
   new.firm_id := old.firm_id;
 
   if new.deleted_at is not null and old.deleted_at is null then
-    if not app.is_partner() then
+    if not (app.is_partner() or app.is_privileged()) then
       raise exception 'only a partner can delete a matter' using errcode = '42501';
     end if;
     insert into public.activity_log (firm_id, user_id, action, entity_type, entity_id, matter_id, detail)
@@ -251,7 +265,7 @@ begin
   end if;
 
   if new.status <> 'closed' and old.status = 'closed' then
-    if not app.is_partner() then
+    if not (app.is_partner() or app.is_privileged()) then
       raise exception 'only a partner can reopen a closed matter' using errcode = '42501';
     end if;
     new.date_closed := null;
@@ -270,7 +284,8 @@ create or replace function public.clients_guard()
 returns trigger language plpgsql as $$
 begin
   new.firm_id := old.firm_id;
-  if new.deleted_at is not null and old.deleted_at is null and not app.is_partner() then
+  if new.deleted_at is not null and old.deleted_at is null
+     and not (app.is_partner() or app.is_privileged()) then
     raise exception 'only a partner can delete a client' using errcode = '42501';
   end if;
   return new;

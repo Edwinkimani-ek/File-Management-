@@ -32,6 +32,12 @@ export function friendlyDbError(message: string): string {
   if (message.includes('users_firm_email_idx')) {
     return 'Someone with that email address is already a user in this firm.';
   }
+  if (message.includes('new row violates row-level security')) {
+    // Postgres checks the row an update produces against the same
+    // policies, so this is usually someone moving a record out of their
+    // own reach — an associate reassigning their file to a colleague, say.
+    return 'That change would put this record out of your reach, so it has been refused. A partner can make it for you.';
+  }
   if (message.includes('row-level security') || message.includes('42501')) {
     return 'You do not have permission to do that.';
   }

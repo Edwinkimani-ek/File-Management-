@@ -90,6 +90,19 @@ as $$
   )
 $$;
 
+-- Fee earners — partners and associates — are the roles that open files,
+-- take on clients and keep the diary. Clerks read and file, they do not
+-- create.
+create or replace function app.is_fee_earner()
+returns boolean
+language sql stable security definer set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.users u
+    where u.id = auth.uid() and u.status = 'active'
+      and u.role in ('partner', 'associate'))
+$$;
+
 -- Fee notes and client money are invisible to clerks, everywhere.
 create or replace function app.can_see_money()
 returns boolean
@@ -99,6 +112,20 @@ as $$
     select 1 from public.users u
     where u.id = auth.uid() and u.status = 'active'
       and u.role in ('partner', 'associate'))
+$$;
+
+-- True only for a caller that is not an end user: the service role, or a
+-- direct psql session. The service-role key is server-side infrastructure
+-- — signup, invitation redemption, seeding, the reminder job — and the
+-- business-rule triggers let it through the role checks it could not
+-- otherwise satisfy, since it has no auth.uid() to check a role against.
+-- An anonymous request is not privileged here: every policy is granted to
+-- `authenticated` only, so anon never reaches these triggers at all.
+create or replace function app.is_privileged()
+returns boolean
+language sql stable set search_path = public, pg_temp
+as $$
+  select coalesce(auth.role(), 'service_role') not in ('authenticated', 'anon')
 $$;
 
 grant usage on schema app to authenticated, service_role;

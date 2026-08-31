@@ -16,9 +16,11 @@ export interface FilterSelect {
 export function FilterBar({
   searchPlaceholder = 'Search…',
   selects = [],
+  showSearch = true,
 }: {
   searchPlaceholder?: string;
   selects?: FilterSelect[];
+  showSearch?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -57,19 +59,21 @@ export function FilterBar({
       onSubmit={onSearch}
       className="flex flex-col gap-3 border-b border-ink-200 p-4 sm:flex-row sm:flex-wrap sm:items-end"
     >
-      <div className="min-w-0 flex-1 sm:min-w-[16rem]">
-        <label className="label" htmlFor="filter-q">
-          Search
-        </label>
-        <input
-          id="filter-q"
-          name="q"
-          className="input"
-          placeholder={searchPlaceholder}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </div>
+      {showSearch ? (
+        <div className="min-w-0 flex-1 sm:min-w-[16rem]">
+          <label className="label" htmlFor="filter-q">
+            Search
+          </label>
+          <input
+            id="filter-q"
+            name="q"
+            className="input"
+            placeholder={searchPlaceholder}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+      ) : null}
 
       {selects.map((select) => (
         <div key={select.name} className="sm:w-48">
@@ -93,9 +97,11 @@ export function FilterBar({
       ))}
 
       <div className="flex gap-2">
-        <button type="submit" className="btn-primary">
-          Search
-        </button>
+        {showSearch ? (
+          <button type="submit" className="btn-primary">
+            Search
+          </button>
+        ) : null}
         {hasFilters ? (
           <button type="button" className="btn-secondary" onClick={() => router.push(pathname)}>
             Clear
