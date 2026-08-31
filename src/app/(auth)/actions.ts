@@ -4,15 +4,24 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logActivity } from '@/lib/activity';
-import { env } from '@/lib/env';
+import { describeCredentialProblem, env } from '@/lib/env';
 import { hashToken } from '@/lib/invitations';
 import { text, type FormState } from '@/lib/forms';
 
 const MIN_PASSWORD = 8;
 
-const NO_SERVICE_KEY =
-  'This deployment is missing its Supabase service role key, so accounts cannot be ' +
-  'created. Ask whoever set it up to add SUPABASE_SERVICE_ROLE_KEY.';
+/**
+ * Account creation is the only thing that needs the service role key, so a
+ * bad one shows up here and nowhere else — the rest of the app carries on
+ * working, which makes it look like a signup bug rather than a
+ * configuration one. Say what is actually wrong, on the form.
+ */
+function serviceKeyProblem(): string | null {
+  return describeCredentialProblem(
+    'SUPABASE_SERVICE_ROLE_KEY',
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+  );
+}
 
 // -------------------------------------------------------------- sign up
 /**
@@ -33,7 +42,8 @@ export async function signUpAction(_prev: FormState, data: FormData): Promise<Fo
     return { error: `Choose a password of at least ${MIN_PASSWORD} characters.` };
   }
 
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return { error: NO_SERVICE_KEY };
+  const keyProblem = serviceKeyProblem();
+  if (keyProblem) return { error: keyProblem };
   const admin = createAdminClient();
 
   const { data: created, error: authError } = await admin.auth.admin.createUser({
@@ -230,7 +240,8 @@ export async function acceptInviteAction(
   }
   if (password !== confirm) return { error: 'The two passwords do not match.' };
 
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return { error: NO_SERVICE_KEY };
+  const keyProblem = serviceKeyProblem();
+  if (keyProblem) return { error: keyProblem };
   const admin = createAdminClient();
   const { data: invite } = await admin
     .from('invitations')

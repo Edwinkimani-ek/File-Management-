@@ -18,7 +18,7 @@ of us has to reconstruct it from memory or scrollback.
 | Verified against a local Postgres | **Done** — 58 policy assertions, RLS audit clean |
 | Verified against the real Supabase project | **Not started** — needs the schema applied |
 | App deployed and reachable | **Done** — https://file-management-beige.vercel.app |
-| Schema applied to staging | **Outstanding — you** (unconfirmed) |
+| Schema applied to staging | **Done** — signup reached the auth service, so the tables are there |
 | Auth redirect URL configured | **Outstanding — you** |
 | Firms registered, users invited | **Outstanding — you** |
 | Demo data seeded | **Outstanding — you** |
@@ -102,6 +102,13 @@ Each of these was found by running the thing rather than reading it.
 6. **The seed script's lookup was blocked by the RLS it was seeding
    through** — a chicken-and-egg the script now avoids by adopting the
    partner's identity first.
+7. **A mistyped credential produced an unreadable error.** Pasting a
+   dashboard's masked value — the bullets shown before you click Reveal —
+   surfaced as "Cannot convert argument to a ByteString because the
+   character at index 15 has a value of 8226", which names neither the
+   variable at fault nor the remedy. Credentials are now checked on the
+   way in, and the signup and invitation screens say which variable is
+   wrong and how to re-copy it.
 
 ---
 

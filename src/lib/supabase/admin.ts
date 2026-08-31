@@ -1,6 +1,6 @@
 import 'server-only';
 import { createClient } from '@supabase/supabase-js';
-import { env } from '@/lib/env';
+import { describeCredentialProblem, env } from '@/lib/env';
 
 /**
  * Service-role client. It bypasses row-level security, so it is only ever
@@ -9,10 +9,12 @@ import { env } from '@/lib/env';
  * job. Never import this into anything that handles ordinary requests.
  */
 export function createAdminClient() {
-  if (!env.supabaseServiceRoleKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured');
-  }
-  return createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
+  const problem = describeCredentialProblem(
+    'SUPABASE_SERVICE_ROLE_KEY',
+    env.supabaseServiceRoleKey,
+  );
+  if (problem) throw new Error(problem);
+  return createClient(env.supabaseUrl, env.supabaseServiceRoleKey as string, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 }
