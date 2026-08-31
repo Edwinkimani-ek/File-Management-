@@ -6,6 +6,8 @@ of us has to reconstruct it from memory or scrollback.
 
 **Last updated:** 31 August 2026
 
+**Staging app:** https://file-management-beige.vercel.app
+
 ---
 
 ## Where things stand
@@ -15,8 +17,11 @@ of us has to reconstruct it from memory or scrollback.
 | Features 1–6 built | **Done** |
 | Verified against a local Postgres | **Done** — 58 policy assertions, RLS audit clean |
 | Verified against the real Supabase project | **Not started** — needs the schema applied |
-| Schema applied to staging | **Outstanding — you** |
-| App deployed and reachable | **Outstanding — you** |
+| App deployed and reachable | **Done** — https://file-management-beige.vercel.app |
+| Schema applied to staging | **Outstanding — you** (unconfirmed) |
+| Auth redirect URL configured | **Outstanding — you** |
+| Firms registered, users invited | **Outstanding — you** |
+| Demo data seeded | **Outstanding — you** |
 | Acceptance tests run | **Outstanding — you** |
 | Security checklist run | **Outstanding — you** |
 | Backup restore test | **Outstanding — you** |
@@ -125,8 +130,18 @@ accounting, time tracking, AI features, native mobile apps.
 
 ## Next action
 
-Yours: deploy and apply the schema — see the walkthrough. Then the
-acceptance tests in `ACCEPTANCE-TESTS.md` and the checklist in
-`SECURITY-CHECKLIST.md`.
+Yours, in order:
 
-Mine: fix whatever those turn up.
+1. Set `NEXT_PUBLIC_SITE_URL` in Vercel to the staging URL and redeploy,
+   so invitation and password-reset links are stable across deploys.
+2. Supabase → Authentication → URL Configuration: set the Site URL and
+   add `https://file-management-beige.vercel.app/auth/callback`.
+3. Register the two firms in the app and invite an associate and a clerk.
+4. Seed both firms with `supabase/seed_demo_data.sql`.
+5. Run `rls_audit.sql`, then `ACCEPTANCE-TESTS.md` and
+   `SECURITY-CHECKLIST.md`.
+
+Mine: fix whatever those turn up. Note that this build environment cannot
+reach either Supabase or the deployed app — its egress policy refuses
+both — so everything against the live system is run by you and diagnosed
+from what you paste back.
