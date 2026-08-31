@@ -7,7 +7,10 @@
 -- assigned to, otherwise it misses the conflict it exists to catch. It
 -- still never crosses a firm boundary, and it returns only enough to name
 -- the clash — not the contents of a matter the caller cannot open.
-create or replace function public.conflict_check(p_query text)
+create or replace function public.conflict_check(
+  p_query text,
+  p_exclude_client_id uuid default null
+)
 returns table (
   kind           text,
   label          text,
@@ -28,6 +31,7 @@ as $$
   where c.firm_id = me.firm_id and c.deleted_at is null
     and length(btrim(coalesce(p_query, ''))) >= 3
     and c.full_name ilike q.pattern
+    and (p_exclude_client_id is null or c.id <> p_exclude_client_id)
 
   union all
 
@@ -50,8 +54,8 @@ as $$
   limit 25;
 $$;
 
-revoke all on function public.conflict_check(text) from public, anon;
-grant execute on function public.conflict_check(text) to authenticated;
+revoke all on function public.conflict_check(text, uuid) from public, anon;
+grant execute on function public.conflict_check(text, uuid) to authenticated;
 
 -- Next file reference suggestion, e.g. KM/CIV/045/2026. The firm may
 -- always override it, so this only has to be a sensible guess.
