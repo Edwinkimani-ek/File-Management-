@@ -6,8 +6,9 @@ single pilot firm runs its live matters on for a 90-day trial.
 - Next.js 14 (App Router, TypeScript) — one codebase, front and back
 - Supabase (Postgres) — database, auth and storage, with row-level
   security on every table
-- Tailwind CSS — mobile-first, because advocates use this in court
-  corridors on a phone
+- Tailwind CSS — tablet and desktop first (768 px and up). The layout is
+  still responsive, but small-phone optimisation is a nice-to-have, not a
+  pilot requirement.
 - Vercel + Supabase cloud for hosting
 
 ---
