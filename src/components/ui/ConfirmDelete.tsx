@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useFormState } from 'react-dom';
 import { Trash2 } from 'lucide-react';
 import { SubmitButton } from '@/components/ui/SubmitButton';
+import { Alert } from '@/components/ui/Alert';
+import { EMPTY_FORM_STATE, type FormState } from '@/lib/forms';
 
 /**
  * Two-step delete. Nothing here is ever destructive — every delete in
@@ -16,13 +19,14 @@ export function ConfirmDelete({
   confirmLabel,
   question,
 }: {
-  action: (data: FormData) => void | Promise<void>;
+  action: (_prev: FormState, data: FormData) => Promise<FormState>;
   hidden: Record<string, string>;
   label: string;
   confirmLabel: string;
   question: string;
 }) {
   const [asking, setAsking] = useState(false);
+  const [state, formAction] = useFormState(action, EMPTY_FORM_STATE);
 
   if (!asking) {
     return (
@@ -33,12 +37,19 @@ export function ConfirmDelete({
   }
 
   return (
-    <form action={action} className="flex flex-wrap items-center gap-2 rounded-md border border-red-300 bg-red-50 p-2">
+    <form
+      action={formAction}
+      className="flex flex-wrap items-center gap-2 rounded-md border border-red-300 bg-red-50 p-2"
+    >
       {Object.entries(hidden).map(([name, value]) => (
         <input key={name} type="hidden" name={name} value={value} />
       ))}
       <span className="text-sm text-red-800">{question}</span>
-      <SubmitButton className="btn-danger" pendingText="Deleting…">{confirmLabel}</SubmitButton>
+      {state.error ? <Alert tone="error">{state.error}</Alert> : null}
+      {state.success ? <Alert tone="success">{state.success}</Alert> : null}
+      <SubmitButton className="btn-danger" pendingText="Deleting…">
+        {confirmLabel}
+      </SubmitButton>
       <button type="button" className="btn-secondary" onClick={() => setAsking(false)}>
         Cancel
       </button>

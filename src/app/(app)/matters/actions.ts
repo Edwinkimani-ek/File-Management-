@@ -183,18 +183,25 @@ export async function reopenMatterAction(_prev: FormState, data: FormData): Prom
 }
 
 /** Soft delete. Partner only, enforced again by the matters_guard trigger. */
-export async function deleteMatterAction(data: FormData): Promise<void> {
+export async function deleteMatterAction(
+  _prev: FormState,
+  data: FormData,
+): Promise<FormState> {
   const { user } = await requireSession();
-  if (!can(user.role).deleteRecords) redirect('/forbidden');
+  if (!can(user.role).deleteRecords) {
+    return { error: 'Only a partner can delete matters.' };
+  }
 
   const id = text(data, 'matter_id');
-  if (!id) return;
+  if (!id) return { error: 'No matter selected.' };
 
   const supabase = createClient();
-  await supabase
+  const { error } = await supabase
     .from('matters')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
+
+  if (error) return { error: friendlyDbError(error.message) };
 
   revalidatePath('/matters');
   redirect('/matters');

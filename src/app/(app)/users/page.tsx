@@ -6,8 +6,8 @@ import { ROLE_LABELS } from '@/lib/labels';
 import { formatDate } from '@/lib/dates';
 import type { AppUser } from '@/lib/types';
 import { InviteUserForm } from './InviteUserForm';
+import { RevokeInviteForm } from './RevokeInviteForm';
 import { UserRow } from './UserRow';
-import { revokeInviteAction } from './actions';
 
 export const metadata = { title: 'Users · Wakili' };
 export const dynamic = 'force-dynamic';
@@ -82,12 +82,7 @@ export default async function UsersPage() {
                         <span className="ml-2">expires {formatDate(invite.expires_at)}</span>
                       </p>
                     </div>
-                    <form action={revokeInviteAction}>
-                      <input type="hidden" name="invitation_id" value={invite.id} />
-                      <button type="submit" className="text-xs text-red-700 hover:underline">
-                        Withdraw
-                      </button>
-                    </form>
+                    <RevokeInviteForm invitationId={invite.id} />
                   </li>
                 ))}
               </ul>

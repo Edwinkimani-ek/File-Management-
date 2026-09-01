@@ -144,31 +144,38 @@ export async function updateDocumentAction(
 }
 
 /** Soft delete. Partner only, refused again by the documents_guard trigger. */
-export async function deleteDocumentAction(data: FormData): Promise<void> {
+export async function deleteDocumentAction(
+  _prev: FormState,
+  data: FormData,
+): Promise<FormState> {
   const { user, firm } = await requireSession();
-  if (!can(user.role).deleteRecords) return;
+  if (!can(user.role).deleteRecords) {
+    return { error: 'Only a partner can delete documents.' };
+  }
 
   const supabase = createClient();
   const id = text(data, 'document_id');
   const matterId = text(data, 'matter_id');
-  if (!id) return;
+  const fileName = text(data, 'file_name');
+  if (!id) return { error: 'No document selected.' };
 
   const { error } = await supabase
     .from('documents')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
-  if (!error) {
-    await logActivity(supabase, {
-      firmId: firm.id,
-      userId: user.id,
-      action: 'document.deleted',
-      entityType: 'document',
-      entityId: id,
-      matterId,
-      detail: text(data, 'file_name'),
-    });
-  }
+  if (error) return { error: friendlyDbError(error.message) };
+
+  await logActivity(supabase, {
+    firmId: firm.id,
+    userId: user.id,
+    action: 'document.deleted',
+    entityType: 'document',
+    entityId: id,
+    matterId,
+    detail: fileName,
+  });
 
   revalidatePath(`/matters/${matterId}`);
+  return { success: fileName ? `${fileName} deleted.` : 'Document deleted.' };
 }

@@ -83,12 +83,17 @@ export async function updateClientAction(_prev: FormState, data: FormData): Prom
 }
 
 /** Soft delete. Partner only, refused again by the clients_guard trigger. */
-export async function deleteClientAction(data: FormData): Promise<void> {
+export async function deleteClientAction(
+  _prev: FormState,
+  data: FormData,
+): Promise<FormState> {
   const { user, firm } = await requireSession();
-  if (!can(user.role).deleteRecords) redirect('/forbidden');
+  if (!can(user.role).deleteRecords) {
+    return { error: 'Only a partner can delete clients.' };
+  }
 
   const id = text(data, 'client_id');
-  if (!id) return;
+  if (!id) return { error: 'No client selected.' };
 
   const supabase = createClient();
 
@@ -100,14 +105,14 @@ export async function deleteClientAction(data: FormData): Promise<void> {
     .eq('client_id', id)
     .is('deleted_at', null);
   if ((count ?? 0) > 0) {
-    redirect(`/clients/${id}?error=${encodeURIComponent(
-      'This client still has matters on file. Delete or reassign those first.')}`);
+    return { error: 'This client still has matters on file. Delete or reassign those first.' };
   }
 
-  await supabase
+  const { error } = await supabase
     .from('clients')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
+  if (error) return { error: friendlyDbError(error.message) };
 
   await logActivity(supabase, {
     firmId: firm.id,

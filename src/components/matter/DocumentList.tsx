@@ -8,6 +8,7 @@ import {
 } from '@/app/(app)/matters/[id]/documents-actions';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Badge } from '@/components/ui/Badge';
+import { Alert } from '@/components/ui/Alert';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { EMPTY_FORM_STATE } from '@/lib/forms';
 import { DOCUMENT_CATEGORY_LABELS, entries } from '@/lib/labels';
@@ -99,15 +100,7 @@ export function DocumentList({
                     </button>
                   ) : null}
                   {canDelete ? (
-                    <form action={deleteDocumentAction}>
-                      <input type="hidden" name="document_id" value={document.id} />
-                      <input type="hidden" name="matter_id" value={matterId} />
-                      <input type="hidden" name="file_name" value={document.file_name} />
-                      <button type="submit" className="btn-danger">
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Delete</span>
-                      </button>
-                    </form>
+                    <DeleteDocumentForm document={document} matterId={matterId} />
                   ) : null}
                 </div>
               </div>
@@ -164,6 +157,30 @@ function EditDocumentForm({
         <SubmitButton pendingText="Saving…">Save</SubmitButton>
         <button type="button" className="btn-secondary" onClick={onDone}>Cancel</button>
       </div>
+    </form>
+  );
+}
+
+function DeleteDocumentForm({
+  document,
+  matterId,
+}: {
+  document: DocumentRow;
+  matterId: string;
+}) {
+  const [state, action] = useFormState(deleteDocumentAction, EMPTY_FORM_STATE);
+
+  return (
+    <form action={action} className="flex flex-col gap-2">
+      <input type="hidden" name="document_id" value={document.id} />
+      <input type="hidden" name="matter_id" value={matterId} />
+      <input type="hidden" name="file_name" value={document.file_name} />
+      <button type="submit" className="btn-danger">
+        <Trash2 className="h-4 w-4" />
+        <span className="sr-only">Delete</span>
+      </button>
+      {state.error ? <Alert tone="error">{state.error}</Alert> : null}
+      {state.success ? <Alert tone="success">{state.success}</Alert> : null}
     </form>
   );
 }
