@@ -139,6 +139,26 @@ export function renderTemplate(
 }
 
 /**
+ * Extracts the plain text from a .docx file for AI summarisation.
+ * Returns null if the file is not a readable .docx.
+ */
+export function extractText(buffer: ArrayBuffer): string | null {
+  try {
+    const zip = new PizZip(buffer);
+    const xml = zip.file('word/document.xml')?.asText();
+    if (!xml) return null;
+    const parts: string[] = [];
+    for (const match of xml.matchAll(W_T_TAG)) {
+      const text = match[2].replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+      if (text) parts.push(text);
+    }
+    return parts.join(' ').replace(/\s+/g, ' ').trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Lists the {{token}} markers that remain in the template.
  */
 export function extractTokens(buffer: ArrayBuffer): string[] {

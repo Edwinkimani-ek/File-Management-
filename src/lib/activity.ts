@@ -21,7 +21,8 @@ export type ActivityAction =
   | 'fee_note.sent'
   | 'fee_note.pdf_downloaded'
   | 'payment.recorded'
-  | 'user.invited';
+  | 'user.invited'
+  | 'ai.assistant';
 
 /**
  * Appends to activity_log. Never throws: an audit write failing must not
@@ -79,4 +80,5 @@ export const ACTIVITY_LABELS: Record<string, string> = {
   'user.invited': 'Invited a user',
   'user.role_changed': 'Changed a user role',
   'user.status_changed': 'Changed a user status',
+  'ai.assistant': 'Used the AI assistant',
 };
