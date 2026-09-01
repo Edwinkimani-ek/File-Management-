@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFormState } from 'react-dom';
 import { Download, Eye, Pencil, Trash2, X } from 'lucide-react';
 import {
@@ -117,28 +117,7 @@ export function DocumentList({
       </ul>
 
       {previewing ? (
-        <div className="fixed inset-0 z-50 flex flex-col bg-ink-900/80 p-2 sm:p-6"
-             role="dialog" aria-label={`Preview of ${previewing.file_name}`}>
-          <div className="mb-2 flex items-center justify-between gap-3 text-white">
-            <p className="truncate text-sm">{previewing.file_name}</p>
-            <button type="button" className="rounded p-2 hover:bg-white/10"
-                    onClick={() => setPreviewing(null)} aria-label="Close preview">
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          {previewing.mime_type === 'application/pdf' ? (
-            <iframe
-              title={previewing.file_name}
-              src={`/api/documents/${previewing.id}`}
-              className="min-h-0 flex-1 rounded bg-white"
-            />
-          ) : (
-            <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto rounded bg-white p-2">
-              <img src={`/api/documents/${previewing.id}`} alt={previewing.file_name}
-                   className="max-h-full w-auto object-contain" />
-            </div>
-          )}
-        </div>
+        <PreviewModal doc={previewing} onClose={() => setPreviewing(null)} />
       ) : null}
     </>
   );
@@ -186,5 +165,82 @@ function EditDocumentForm({
         <button type="button" className="btn-secondary" onClick={onDone}>Cancel</button>
       </div>
     </form>
+  );
+}
+
+function PreviewModal({
+  doc,
+  onClose,
+}: {
+  doc: DocumentRow;
+  onClose: () => void;
+}) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const closeBtn = closeRef.current;
+    closeBtn?.focus();
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key === 'Tab') {
+        // The only focusable control is the close button, so keep focus there.
+        event.preventDefault();
+        closeBtn?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-ink-900/80 p-2 sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Preview of ${doc.file_name}`}
+    >
+      <div className="mb-2 flex items-center justify-between gap-3 text-white">
+        <p className="truncate text-sm">{doc.file_name}</p>
+        <button
+          ref={closeRef}
+          type="button"
+          className="rounded p-2 hover:bg-white/10"
+          onClick={onClose}
+          aria-label="Close preview"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      {doc.mime_type === 'application/pdf' ? (
+        <iframe
+          title={doc.file_name}
+          src={`/api/documents/${doc.id}`}
+          className="min-h-0 flex-1 rounded bg-white"
+          sandbox=""
+          tabIndex={-1}
+        />
+      ) : (
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto rounded bg-white p-2">
+          <img
+            src={`/api/documents/${doc.id}`}
+            alt={doc.file_name}
+            className="max-h-full w-auto object-contain"
+            tabIndex={-1}
+          />
+        </div>
+      )}
+    </div>
   );
 }
