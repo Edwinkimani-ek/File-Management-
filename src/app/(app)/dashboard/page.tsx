@@ -29,7 +29,6 @@ export default async function DashboardPage() {
       .from('diary_events')
       .select('id, title, event_type, event_date, event_time, court_station, matter_id,' +
               ' matters:matter_id (id, file_reference, title)')
-      .eq('assigned_to', user.id)
       .eq('status', 'upcoming')
       .gte('event_date', today)
       .lte('event_date', weekOut)
@@ -41,7 +40,6 @@ export default async function DashboardPage() {
       .select('id, file_reference, title, practice_area, status, court_case_number', {
         count: 'exact',
       })
-      .eq('assigned_to', user.id)
       .eq('status', 'active')
       .is('deleted_at', null)
       .order('date_opened', { ascending: false })
