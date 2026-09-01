@@ -10,6 +10,7 @@ export function can(role: UserRole) {
     manageUsers: role === 'partner',
     editFirmSettings: role === 'partner',
     seeMoney: role === 'partner' || role === 'associate',
+    recordPayments: role === 'partner',
     approveFeeNotes: role === 'partner',
     createMatters: role === 'partner' || role === 'associate',
     createClients: role === 'partner' || role === 'associate',

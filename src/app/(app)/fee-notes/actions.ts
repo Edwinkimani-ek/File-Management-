@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireSession } from '@/lib/auth';
 import { can } from '@/lib/permissions';
 import { logActivity } from '@/lib/activity';
-import { parseKesToCents } from '@/lib/money';
+import { formatKes, parseKesToCents } from '@/lib/money';
 import { friendlyDbError, optionalText, text, type FormState } from '@/lib/forms';
 import type { FeeNoteLineItem, PaymentMethod } from '@/lib/types';
 
@@ -52,10 +52,13 @@ export async function createFeeNoteAction(_prev: FormState, data: FormData): Pro
   const supabase = createClient();
   const { data: matter } = await supabase
     .from('matters')
-    .select('id, client_id')
+    .select('id, client_id, status')
     .eq('id', matterId)
     .maybeSingle();
   if (!matter) return { error: 'That matter is not available to you.' };
+  if (matter.status === 'closed') {
+    return { error: 'You cannot raise a fee note against a closed matter.' };
+  }
 
   const { data: created, error } = await supabase
     .from('fee_notes')
@@ -180,7 +183,9 @@ export async function returnToDraftAction(_prev: FormState, data: FormData): Pro
  */
 export async function recordPaymentAction(_prev: FormState, data: FormData): Promise<FormState> {
   const { user, firm } = await requireSession();
-  if (!can(user.role).seeMoney) return { error: 'Your role cannot record payments.' };
+  if (!can(user.role).recordPayments) {
+    return { error: 'Only a partner can record payments.' };
+  }
 
   const feeNoteId = text(data, 'fee_note_id');
   const amount = parseKesToCents(text(data, 'amount'));
@@ -192,6 +197,18 @@ export async function recordPaymentAction(_prev: FormState, data: FormData): Pro
   if (!METHODS.includes(method)) return { error: 'Choose how the money came in.' };
 
   const supabase = createClient();
+  const { data: feeNote } = await supabase
+    .from('fee_notes')
+    .select('id, total, amount_paid')
+    .eq('id', feeNoteId)
+    .maybeSingle();
+  if (!feeNote) return { error: 'That fee note is not available to you.' };
+
+  const balance = feeNote.total - feeNote.amount_paid;
+  if (amount > balance) {
+    return { error: `The outstanding balance is ${formatKes(balance)}. You cannot record a payment larger than that.` };
+  }
+
   const { error } = await supabase.from('payments').insert({
     firm_id: firm.id,
     fee_note_id: feeNoteId,

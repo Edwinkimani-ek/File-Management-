@@ -70,17 +70,23 @@ export async function inviteUserAction(_prev: FormState, data: FormData): Promis
   return { success: `Invitation emailed to ${email}.` };
 }
 
-export async function revokeInviteAction(data: FormData): Promise<void> {
+export async function revokeInviteAction(
+  _prev: FormState,
+  data: FormData,
+): Promise<FormState> {
   await requireRole('partner');
   const supabase = createClient();
   const id = text(data, 'invitation_id');
-  if (id) {
-    await supabase
-      .from('invitations')
-      .update({ revoked_at: new Date().toISOString() })
-      .eq('id', id);
-  }
+  if (!id) return { error: 'No invitation selected.' };
+
+  const { error } = await supabase
+    .from('invitations')
+    .update({ revoked_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) return { error: friendlyDbError(error.message) };
+
   revalidatePath('/users');
+  return { success: 'Invitation withdrawn.' };
 }
 
 export async function updateUserAction(_prev: FormState, data: FormData): Promise<FormState> {

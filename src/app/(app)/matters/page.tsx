@@ -53,6 +53,7 @@ export default async function MattersPage({
       .from('clients')
       .select('id')
       .ilike('full_name', `%${searchParams.q}%`)
+      .is('deleted_at', null)
       .limit(200);
     clientIds = (matchedClients ?? []).map((c) => c.id);
   }

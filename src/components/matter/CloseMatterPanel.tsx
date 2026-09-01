@@ -44,10 +44,11 @@ export function CloseMatterPanel({ matterId }: { matterId: string }) {
 export function ReopenMatterButton({ matterId }: { matterId: string }) {
   const [state, action] = useFormState(reopenMatterAction, EMPTY_FORM_STATE);
   return (
-    <form action={action}>
+    <form action={action} className="space-y-2">
       <input type="hidden" name="matter_id" value={matterId} />
       <SubmitButton className="btn-secondary" pendingText="Reopening…">Reopen matter</SubmitButton>
-      {state.error ? <p className="mt-1 text-xs text-red-700">{state.error}</p> : null}
+      {state.error ? <Alert tone="error">{state.error}</Alert> : null}
+      {state.success ? <Alert tone="success">{state.success}</Alert> : null}
     </form>
   );
 }
