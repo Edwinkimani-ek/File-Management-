@@ -13,7 +13,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { EMPTY_FORM_STATE } from '@/lib/forms';
 import { DOCUMENT_CATEGORY_LABELS, entries } from '@/lib/labels';
 import { formatDateTime } from '@/lib/dates';
-import { formatBytes } from '@/lib/uploads';
+import { extensionOf, formatBytes } from '@/lib/uploads';
 import type { DocumentCategory } from '@/lib/types';
 
 export interface DocumentRow {
@@ -27,8 +27,13 @@ export interface DocumentRow {
   uploader: { full_name: string } | null;
 }
 
-function isPreviewable(mime: string | null): boolean {
-  return mime === 'application/pdf' || mime === 'image/png' || mime === 'image/jpeg';
+function isPreviewable(doc: DocumentRow): boolean {
+  const mime = doc.mime_type;
+  if (mime === 'application/pdf' || mime === 'image/png' || mime === 'image/jpeg') {
+    return true;
+  }
+  const ext = extensionOf(doc.file_name);
+  return ext === 'pdf' || ext === 'png' || ext === 'jpg' || ext === 'jpeg';
 }
 
 export function DocumentList({
@@ -83,7 +88,7 @@ export function DocumentList({
                 </div>
 
                 <div className="flex shrink-0 flex-wrap gap-2">
-                  {isPreviewable(document.mime_type) ? (
+                  {isPreviewable(document) ? (
                     <button type="button" className="btn-secondary"
                             onClick={() => setPreviewing(document)}>
                       <Eye className="h-4 w-4" /> Preview
