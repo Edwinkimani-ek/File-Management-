@@ -139,7 +139,7 @@ export default async function FeeNotePage({ params }: { params: { id: string } }
               <EmptyState title="No payments recorded yet" />
             )}
 
-            {feeNote.status !== 'draft' && balance > 0 ? (
+            {isPartner && feeNote.status !== 'draft' && balance > 0 ? (
               <div className="border-t border-ink-200">
                 <RecordPaymentForm feeNoteId={feeNote.id} balance={balance} />
               </div>
