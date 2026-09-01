@@ -246,11 +246,13 @@ function PreviewModal({
         </button>
       </div>
       {doc.mime_type === 'application/pdf' ? (
+        // No sandbox attribute: Chrome blocks its built-in PDF viewer inside
+        // a sandboxed iframe. The iframe ultimately loads a cross-origin
+        // signed URL from Supabase Storage, so it cannot access this page.
         <iframe
           title={doc.file_name}
           src={`/api/documents/${doc.id}`}
           className="min-h-0 flex-1 rounded bg-white"
-          sandbox=""
           tabIndex={-1}
         />
       ) : (
