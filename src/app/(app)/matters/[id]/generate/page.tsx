@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { loadMatter } from '@/lib/matters';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { GenerateDocumentForm } from './GenerateDocumentForm';
-import { presetValues } from './actions';
+import { presetValues } from '@/lib/template-presets';
 import type { Template } from '@/lib/types';
 
 export const metadata = { title: 'Generate document · Wakili' };

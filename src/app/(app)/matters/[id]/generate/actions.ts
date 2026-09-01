@@ -8,13 +8,8 @@ import { loadMatter, canWriteToMatter } from '@/lib/matters';
 import { renderTemplate } from '@/lib/docx';
 import { safeFileName } from '@/lib/uploads';
 import { friendlyDbError, text, type FormState } from '@/lib/forms';
-import type { Template } from '@/lib/types';
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export async function generateDocumentAction(
   _prev: FormState,
@@ -84,38 +79,4 @@ export async function generateDocumentAction(
 
   revalidatePath(`/matters/${matter.id}`);
   redirect(`/matters/${matter.id}`);
-}
-
-export function presetValues(
-  matter: Awaited<ReturnType<typeof loadMatter>>,
-  user: { full_name: string },
-  placeholders: Template['placeholders'],
-): Record<string, string> {
-  const map: Record<string, string> = {};
-  for (const p of placeholders) {
-    switch (p.token) {
-      case 'client_name':
-        map[p.token] = matter.clients?.full_name ?? '';
-        break;
-      case 'matter_title':
-        map[p.token] = matter.title;
-        break;
-      case 'file_reference':
-        map[p.token] = matter.file_reference;
-        break;
-      case 'today_date':
-      case 'date':
-        map[p.token] = today();
-        break;
-      case 'advocate_name':
-        map[p.token] = user.full_name;
-        break;
-      case 'kes_amount':
-        map[p.token] = '';
-        break;
-      default:
-        map[p.token] = '';
-    }
-  }
-  return map;
 }
