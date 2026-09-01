@@ -10,7 +10,7 @@ import {
   replacePlaceholders,
   type PlaceholderReplacement,
 } from '@/lib/docx';
-import { safeFileName } from '@/lib/uploads';
+import { extensionOf, safeFileName } from '@/lib/uploads';
 import { friendlyDbError, optionalText, text, type FormState } from '@/lib/forms';
 import type { TemplatePlaceholder } from '@/lib/types';
 
@@ -40,7 +40,8 @@ export async function uploadTemplateAction(
   if (!(file instanceof File) || file.size === 0) {
     return { error: 'Choose a .docx file.' };
   }
-  if (file.type !== DOCX_MIME) {
+  const isDocx = file.type === DOCX_MIME || extensionOf(file.name) === 'docx';
+  if (!isDocx) {
     return { error: 'Upload a Word document (.docx).' };
   }
   if (file.size > MAX_BYTES) {
@@ -52,7 +53,7 @@ export async function uploadTemplateAction(
 
   const { error: uploadError } = await supabase.storage
     .from('templates')
-    .upload(path, file, { contentType: file.type, upsert: false });
+    .upload(path, file, { contentType: DOCX_MIME, upsert: false });
   if (uploadError) return { error: friendlyDbError(uploadError.message) };
 
   const { data: created, error } = await supabase
@@ -63,7 +64,7 @@ export async function uploadTemplateAction(
       description,
       file_name: file.name,
       storage_path: path,
-      mime_type: file.type,
+      mime_type: DOCX_MIME,
       size_bytes: file.size,
       placeholders: [],
       created_by: user.id,
