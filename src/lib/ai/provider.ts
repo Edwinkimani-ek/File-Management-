@@ -47,7 +47,7 @@ class KimiProvider implements AiProvider {
   private model: string;
 
   constructor() {
-    this.baseUrl = (process.env.KIMI_BASE_URL ?? 'https://api.kimi.com').replace(/\/$/, '');
+    this.baseUrl = (process.env.KIMI_BASE_URL ?? 'https://api.moonshot.ai').replace(/\/$/, '');
     this.model = process.env.KIMI_MODEL ?? 'kimi-latest';
   }
 
