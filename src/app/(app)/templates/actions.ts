@@ -51,10 +51,18 @@ export async function uploadTemplateAction(
   const supabase = createClient();
   const path = `${firm.id}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from('templates')
-    .upload(path, file, { contentType: DOCX_MIME, upsert: false });
-  if (uploadError) return { error: friendlyDbError(uploadError.message) };
+  try {
+    const { error: uploadError } = await supabase.storage
+      .from('templates')
+      .upload(path, file, { contentType: DOCX_MIME, upsert: false });
+    if (uploadError) {
+      console.error('Template storage upload failed:', uploadError);
+      return { error: `Upload failed: ${friendlyDbError(uploadError.message)}` };
+    }
+  } catch (e) {
+    console.error('Template storage upload threw:', e);
+    return { error: `Upload failed: ${e instanceof Error ? e.message : String(e)}` };
+  }
 
   const { data: created, error } = await supabase
     .from('templates')
@@ -73,6 +81,7 @@ export async function uploadTemplateAction(
     .single();
 
   if (error || !created) {
+    console.error('Template row insert failed:', error);
     await supabase.storage.from('templates').remove([path]);
     return { error: friendlyDbError(error?.message ?? 'Could not save template.') };
   }
