@@ -8,7 +8,10 @@
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'templates', 'templates', false, 26214400,
-  array['application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+  array[
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/msword'
+  ]
 )
 on conflict (id) do update
   set public = false,

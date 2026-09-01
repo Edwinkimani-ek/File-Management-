@@ -35,11 +35,11 @@ export function TemplateUploadForm() {
           id="file"
           name="file"
           type="file"
-          accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           className="input"
           required
         />
-        <p className="mt-1 text-xs text-ink-500">.docx only, up to 25 MB.</p>
+        <p className="mt-1 text-xs text-ink-500">.doc or .docx, up to 25 MB.</p>
       </div>
 
       <SubmitButton pendingText="Uploading…">Upload and continue</SubmitButton>

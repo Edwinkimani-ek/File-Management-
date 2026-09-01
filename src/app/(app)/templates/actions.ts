@@ -15,6 +15,7 @@ import { friendlyDbError, optionalText, text, type FormState } from '@/lib/forms
 import type { TemplatePlaceholder } from '@/lib/types';
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const DOC_MIME = 'application/msword';
 const MAX_BYTES = 25 * 1024 * 1024;
 
 function labelize(token: string): string {
@@ -40,9 +41,11 @@ export async function uploadTemplateAction(
   if (!(file instanceof File) || file.size === 0) {
     return { error: 'Choose a .docx file.' };
   }
-  const isDocx = file.type === DOCX_MIME || extensionOf(file.name) === 'docx';
-  if (!isDocx) {
-    return { error: 'Upload a Word document (.docx).' };
+  const ext = extensionOf(file.name);
+  const isWord =
+    file.type === DOCX_MIME || file.type === DOC_MIME || ext === 'docx' || ext === 'doc';
+  if (!isWord) {
+    return { error: 'Upload a Word document (.doc or .docx).' };
   }
   if (file.size > MAX_BYTES) {
     return { error: 'The file must be smaller than 25 MB.' };
@@ -50,11 +53,13 @@ export async function uploadTemplateAction(
 
   const supabase = createClient();
   const path = `${firm.id}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
+  const contentType =
+    file.type === DOCX_MIME || file.type === DOC_MIME ? file.type : ext === 'doc' ? DOC_MIME : DOCX_MIME;
 
   try {
     const { error: uploadError } = await supabase.storage
       .from('templates')
-      .upload(path, file, { contentType: DOCX_MIME, upsert: false });
+      .upload(path, file, { contentType, upsert: false });
     if (uploadError) {
       console.error('Template storage upload failed:', uploadError);
       return { error: `Upload failed: ${friendlyDbError(uploadError.message)}` };
@@ -72,7 +77,7 @@ export async function uploadTemplateAction(
       description,
       file_name: file.name,
       storage_path: path,
-      mime_type: DOCX_MIME,
+      mime_type: contentType,
       size_bytes: file.size,
       placeholders: [],
       created_by: user.id,
