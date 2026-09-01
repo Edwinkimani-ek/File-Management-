@@ -150,6 +150,28 @@ export interface Payment {
   created_at: string;
 }
 
+export interface TemplatePlaceholder {
+  token: string;
+  label: string;
+}
+
+export interface Template {
+  id: string;
+  firm_id: string;
+  name: string;
+  description: string | null;
+  file_name: string;
+  storage_path: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  placeholders: TemplatePlaceholder[];
+  is_starter: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 export interface ActivityEntry {
   id: string;
   firm_id: string;
