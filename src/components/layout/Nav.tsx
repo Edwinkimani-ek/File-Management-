@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import {
-  Briefcase, CalendarDays, LayoutDashboard, Menu, Receipt, Settings,
+  Briefcase, CalendarDays, FileText, LayoutDashboard, Menu, Receipt, Settings,
   Users2, UserSquare2, X, LineChart,
 } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
@@ -22,6 +22,7 @@ const ITEMS: NavItem[] = [
   { href: '/matters', label: 'Matters', icon: Briefcase, show: () => true },
   { href: '/clients', label: 'Clients', icon: UserSquare2, show: () => true },
   { href: '/diary', label: 'Court diary', icon: CalendarDays, show: () => true },
+  { href: '/templates', label: 'Templates', icon: FileText, show: () => true },
   { href: '/fee-notes', label: 'Fee notes', icon: Receipt, show: (r) => can(r).seeMoney },
   { href: '/reports', label: 'Reports', icon: LineChart, show: (r) => can(r).viewReports },
   { href: '/users', label: 'Users', icon: Users2, show: (r) => can(r).manageUsers },

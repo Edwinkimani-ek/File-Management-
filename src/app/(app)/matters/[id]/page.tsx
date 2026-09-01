@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { requireSession } from '@/lib/auth';
 import { can } from '@/lib/permissions';
 import { createClient } from '@/lib/supabase/server';
@@ -47,9 +48,17 @@ export default async function MatterDocumentsPage({
       ) : null}
 
       <section className="card">
-        <h2 className="border-b border-ink-200 px-4 py-3 text-sm font-semibold text-ink-800">
-          Documents
-        </h2>
+        <div className="flex flex-col gap-2 border-b border-ink-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-semibold text-ink-800">Documents</h2>
+          {canUpload ? (
+            <Link
+              href={`/matters/${matter.id}/generate`}
+              className="btn-secondary text-sm"
+            >
+              Generate document
+            </Link>
+          ) : null}
+        </div>
 
         {canUpload ? <DocumentUpload matterId={matter.id} /> : null}
 

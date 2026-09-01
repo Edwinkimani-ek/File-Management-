@@ -18,6 +18,13 @@
  * production.
  */
 import { createClient } from '@supabase/supabase-js';
+import {
+  demandLetterBuffer,
+  saleAgreementBuffer,
+  leaseAgreementBuffer,
+  engagementLetterBuffer,
+  witnessStatementBuffer,
+} from './lib/docx-starters.mjs';
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -96,6 +103,60 @@ async function insertReturningId(table, row, matchColumns) {
   const { data, error } = await db.from(table).insert(row).select('id').single();
   if (error) throw new Error(`${table}: ${error.message}`);
   return data.id;
+}
+
+function safeTemplateFileName(name) {
+  return name
+    .normalize('NFKD')
+    .replace(/[^\w.\- ]+/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .slice(-120) || 'template';
+}
+
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+async function seedTemplates(firmId, createdBy) {
+  const starters = [
+    { name: 'Demand letter', description: 'Standard demand for payment.', builder: demandLetterBuffer },
+    { name: 'Sale agreement (land)', description: 'Agreement for sale of land in Kenya.', builder: saleAgreementBuffer },
+    { name: 'Lease agreement', description: 'Residential or commercial lease.', builder: leaseAgreementBuffer },
+    { name: 'Letter of engagement', description: 'Client engagement and fee letter.', builder: engagementLetterBuffer },
+    { name: 'Witness statement', description: 'Affidavit-style witness statement.', builder: witnessStatementBuffer },
+  ];
+
+  for (const starter of starters) {
+    const { data: existing } = await db
+      .from('templates')
+      .select('id')
+      .eq('firm_id', firmId)
+      .eq('name', starter.name)
+      .maybeSingle();
+    if (existing) continue;
+
+    const buffer = await starter.builder();
+    const fileName = `${safeTemplateFileName(starter.name)}.docx`;
+    const path = `${firmId}/${crypto.randomUUID()}-${fileName}`;
+
+    const { error: uploadError } = await db.storage
+      .from('templates')
+      .upload(path, buffer, { contentType: DOCX_MIME, upsert: false });
+    if (uploadError) throw new Error(`upload ${starter.name}: ${uploadError.message}`);
+
+    const { error: insertError } = await db.from('templates').insert({
+      firm_id: firmId,
+      name: starter.name,
+      description: starter.description,
+      file_name: fileName,
+      storage_path: path,
+      mime_type: DOCX_MIME,
+      size_bytes: buffer.byteLength,
+      placeholders: [],
+      is_starter: true,
+      created_by: createdBy,
+    });
+    if (insertError) throw new Error(`insert ${starter.name}: ${insertError.message}`);
+  }
 }
 
 async function main() {
@@ -335,6 +396,8 @@ async function main() {
     { fee_note_id: feeNotePaid },
   );
 
+  await seedTemplates(FIRM_A, partnerA);
+
   // ---------------------------------------------------------- Firm B
   const partnerB = await upsertUser({
     firmId: FIRM_B, email: 'partner@firmb.test',
@@ -374,6 +437,8 @@ async function main() {
     },
     { firm_id: FIRM_B, matter_id: matterB1 },
   );
+
+  await seedTemplates(FIRM_B, partnerB);
 
   console.log('\nDone. Sign in with any of these (password: %s)\n', password);
   console.table([

@@ -17,5 +17,6 @@ export function can(role: UserRole) {
     deleteRecords: role === 'partner',
     viewReports: role === 'partner',
     closeMatters: role === 'partner' || role === 'associate',
+    manageTemplates: role === 'partner',
   };
 }
